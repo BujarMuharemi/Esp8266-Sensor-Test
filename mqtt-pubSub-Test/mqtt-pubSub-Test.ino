@@ -22,14 +22,15 @@
   - Select your ESP8266 in "Tools -> Board"
 
 */
+#include "DHTesp.h"
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
 // Update these with values suitable for your network.
 
-const char* ssid = ".....................";
-const char* password = "..................";
+const char* ssid = ".................";
+const char* password = "............";
 const char* mqtt_server = "broker.mqttdashboard.com";
 
 WiFiClient espClient;
@@ -37,6 +38,8 @@ PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
+
+DHTesp dht;
 
 void setup_wifi() {
 
@@ -95,6 +98,8 @@ void reconnect() {
       client.publish("banana/eaten", "hello world");
       // ... and resubscribe
       client.subscribe("banana/eaten");
+      client.subscribe("temp");
+      client.subscribe("humidity");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -111,6 +116,7 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+  dht.setup(4, DHTesp::DHT11);
 }
 
 void loop() {
@@ -121,12 +127,22 @@ void loop() {
   client.loop();
 
   long now = millis();
-  if (now - lastMsg > 2000) {
+  if (now - lastMsg > 1000) {
+        
     lastMsg = now;
     ++value;
     snprintf (msg, 50, "hello world #%ld", value);
     Serial.print("Publish message: ");
+    
+    float temperature = dht.getTemperature();
+    dtostrf(temperature, 6, 2, msg);     
     Serial.println(msg);
-    client.publish("banana/eaten", msg);
+    client.publish("temp", msg);
+
+    float humidity = dht.getHumidity();
+    dtostrf(humidity, 6, 2, msg);     
+    Serial.println(msg);
+    client.publish("humidity", msg);
+    
   }
 }
