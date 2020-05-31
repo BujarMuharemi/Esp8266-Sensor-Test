@@ -1,6 +1,5 @@
 /*
   Basic ESP8266 MQTT example
-
   This sketch demonstrates the capabilities of the pubsub library in combination
   with the ESP8266 board/library.
 
@@ -23,9 +22,6 @@
 
 */
 
-
-
-
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
@@ -45,8 +41,8 @@ DHT dht(DHTPIN, DHTTYPE);
 
 
 // Update these with values suitable for your network.
-const char* ssid = "...........";
-const char* password = "....................";
+const char* ssid = "..................";
+const char* password = "...................";
 
 const char* mqtt_server = "192.168.1.187";
 String clientId = "clientId-0SE60tkswF";
@@ -104,14 +100,14 @@ float get_dht22_data(String type) {
     Serial.println(F("Failed to read from DHT sensor!"));
     return -273.15;
   }
-  float hif = dht.computeHeatIndex(t, h);
+  float hit = dht.computeHeatIndex(t, h);
 
   if (type.equals("temperature")) {
     return t;
   } else if (type.equals("humidity")) {
     return h;
-  } else if (type.equals("hif")) {
-    return hif;
+  } else if (type.equals("heatindex")) {
+    return hit;
   } else {
     //returns absolute zero, as "error"
     return -273.15;
@@ -225,19 +221,13 @@ void loop() {
       Serial.println(msg);
       client.publish("humidity", msg);
     */
-    float temp = get_bmp280_data("temperature");
-    publish_float(temp,"bmp280/temperature");
-    /*
-    Serial.println(temp);
-    dtostrf(temp, 6, 2, msg);
-    client.publish("bmp280/temperature", msg);*/
+    
+    publish_float(get_bmp280_data("temperature"),"bmp280/temperature");        
+    publish_float(get_bmp280_data("pressure"),"bmp280/pressure");
 
-    float pressure = get_bmp280_data("pressure");
-    publish_float(pressure,"bmp280/pressure");
-    /*
-    Serial.println(hum);
-    dtostrf(hum, 6, 2, msg);
-    client.publish("bmp280/pressure", msg); */
+    publish_float(get_dht22_data("temperature"),"dht22/temperature");
+    publish_float(get_dht22_data("humidity"),"dht22/humidity");
+    publish_float(get_dht22_data("heatindex"),"dht22/heatindex");
 
   }
 }
