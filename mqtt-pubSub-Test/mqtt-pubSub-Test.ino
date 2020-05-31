@@ -22,7 +22,9 @@
   - Select your ESP8266 in "Tools -> Board"
 
 */
-#include "DHTesp.h"
+
+
+
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
@@ -35,14 +37,20 @@ Adafruit_BMP280 bmp; // use I2C interface
 Adafruit_Sensor *bmp_temp = bmp.getTemperatureSensor();
 Adafruit_Sensor *bmp_pressure = bmp.getPressureSensor();
 
-// Update these with values suitable for your network.
+#include "DHT.h"
+#define DHTPIN 13     // D7@WEMOS
+#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
+DHT dht(DHTPIN, DHTTYPE);
 
-const char* ssid = "...........................";
+
+
+// Update these with values suitable for your network.
+const char* ssid = "...........";
 const char* password = "....................";
+
 const char* mqtt_server = "192.168.1.187";
 String clientId = "clientId-0SE60tkswF";
 int portNum = 1889;
-
 
 int sampleTime = 1000;
 
@@ -52,7 +60,7 @@ long lastMsg = 0;
 char msg[50];
 int value = 0;
 
-DHTesp dht;
+
 
 void setup_bmp280() {
   Serial.println(F("BMP280 Sensor event test"));
@@ -86,6 +94,35 @@ float get_bmp280_data(String type) {
     return -273.15;
   }
 
+}
+
+float get_dht22_data(String type) {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  if (isnan(h) || isnan(t)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return -273.15;
+  }
+  float hif = dht.computeHeatIndex(t, h);
+
+  if (type.equals("temperature")) {
+    return t;
+  } else if (type.equals("humidity")) {
+    return h;
+  } else if (type.equals("hif")) {
+    return hif;
+  } else {
+    //returns absolute zero, as "error"
+    return -273.15;
+  }
+
+}
+
+void publish_float(float value, const char* topic) {  
+  Serial.println("Published: "+String(value)+" @Topic: "+topic);
+  dtostrf(value, 6, 2, msg);
+  client.publish(topic, msg);
 }
 
 void setup_wifi() {
@@ -152,14 +189,13 @@ void reconnect() {
   }
 }
 
-
-
 //--------------MAIN SETUP
 void setup() {
   //pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
   setup_wifi();
   setup_bmp280();
+  dht.begin();
   client.setServer(mqtt_server, portNum);
   //client.setCallback(callback); not needed as we just send data
 }
@@ -190,14 +226,18 @@ void loop() {
       client.publish("humidity", msg);
     */
     float temp = get_bmp280_data("temperature");
+    publish_float(temp,"bmp280/temperature");
+    /*
     Serial.println(temp);
     dtostrf(temp, 6, 2, msg);
-    client.publish("bmp280/temperature", msg);
+    client.publish("bmp280/temperature", msg);*/
 
-    float hum = get_bmp280_data("pressure");
+    float pressure = get_bmp280_data("pressure");
+    publish_float(pressure,"bmp280/pressure");
+    /*
     Serial.println(hum);
     dtostrf(hum, 6, 2, msg);
-    client.publish("bmp280/pressure", msg);
+    client.publish("bmp280/pressure", msg); */
 
   }
 }
