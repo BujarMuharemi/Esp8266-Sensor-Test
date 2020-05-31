@@ -29,9 +29,9 @@
 
 // Update these with values suitable for your network.
 
-const char* ssid = ".................";
-const char* password = "............";
-const char* mqtt_server = "broker.mqttdashboard.com";
+const char* ssid = "<___WIFI___>";
+const char* password = "BujarResul2017@";
+const char* mqtt_server = "192.168.1.187";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -97,7 +97,7 @@ void reconnect() {
       // Once connected, publish an announcement...
       client.publish("banana/eaten", "hello world");
       // ... and resubscribe
-      client.subscribe("banana/eaten");
+      //client.subscribe("banana/eaten");
       client.subscribe("temp");
       client.subscribe("humidity");
     } else {
@@ -114,9 +114,9 @@ void setup() {
   pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
   setup_wifi();
-  client.setServer(mqtt_server, 1883);
+  client.setServer(mqtt_server, 1889);
   client.setCallback(callback);
-  dht.setup(4, DHTesp::DHT11);
+  dht.setup(15, DHTesp::DHT11);
 }
 
 void loop() {
