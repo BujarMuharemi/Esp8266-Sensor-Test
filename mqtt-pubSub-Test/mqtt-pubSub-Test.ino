@@ -41,14 +41,14 @@ DHT dht(DHTPIN, DHTTYPE);
 
 
 // Update these with values suitable for your network.
-const char* ssid = "..................";
-const char* password = "...................";
+const char* ssid = "<___WIFI___>";
+const char* password = "BujarResul2017@";
 
-const char* mqtt_server = "192.168.1.187";
+const char* mqtt_server = "34.107.25.251";
 String clientId = "clientId-0SE60tkswF";
-int portNum = 1889;
+int portNum = 1999;
 
-int sampleTime = 1000;
+int sampleTime = 10000;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
