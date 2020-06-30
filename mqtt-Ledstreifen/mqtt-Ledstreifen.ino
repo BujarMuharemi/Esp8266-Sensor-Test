@@ -2,10 +2,21 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+ #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
+
+#define PIN 12
+#define NUMPIXELS 16 
+
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+#define DELAYVAL 500 // Time (in milliseconds) to pause between pixels
+
 // Update these with values suitable for your network.
 
-const char* ssid = "<___WIFI___>";
-const char* password = "BujarResul2017@";
+const char* ssid = ".........";
+const char* password = "............";
 const char* mqtt_server = "34.107.25.251";
 String clientId = "Led-Streifen";
 int portNum = 1999;
@@ -15,9 +26,19 @@ PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
 int value = 0;
+int rgb[3]={70,70,70};
+
+
+void updateLedColor(){
+    //farbe anhand der bekommen werde verandern
+    for(int i=0; i<NUMPIXELS; i++) { 
+      pixels.setPixelColor(i, pixels.Color(rgb[0],rgb[1],rgb[2]));
+      pixels.show();
+    }
+}
+
 
 void setup_wifi() {
-
   delay(10);
   // We start by connecting to a WiFi network
   Serial.println();
@@ -39,26 +60,58 @@ void setup_wifi() {
   Serial.println(WiFi.localIP());
 }
 
+//wird aufgerufen wenn eine neue nachricht auf den gesubten topics kommt
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
+  //Serial.print("Message arrived [");
+  //Serial.print(topic);
+  //Serial.print("] ");
   
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-
   
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '1') {
-    digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is active low on the ESP-01)
-  } else if((char)payload[0] == '0'){
-    digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+//zum parsen der Farben
+  if (strcmp(topic,"led1/r")==0){    
+    String value="";
+    for (int i = 0; i < length; i++) {      
+      value+=(char)payload[i];
+    }        
+    Serial.println(value.toInt());
+    rgb[0]=value.toInt();
+    updateLedColor();
+    
   }
-
+  else if(strcmp(topic,"led1/g")==0){
+    String value="";
+    for (int i = 0; i < length; i++) {      
+      value+=(char)payload[i];
+    }        
+    Serial.println(value.toInt());
+    rgb[1]=value.toInt(); 
+    updateLedColor();   
+  }  
+  
+  else if(strcmp(topic,"led1/b")==0){    
+    String value="";
+    for (int i = 0; i < length; i++) {      
+      value+=(char)payload[i];
+    }     
+    Serial.println(value.toInt());
+    rgb[2]=value.toInt();
+    updateLedColor();
+  }
+  
+  //Die Ledstreifen an/aus schalten
+  else if (strcmp(topic,"led1/state")== 0) { 
+    if((char)payload[0] == '1'){ 
+       for(int i=0; i<NUMPIXELS; i++) { // For each pixel...
+        // pixels.Color() takes RGB values, from 0,0,0 up to 255,255,255       
+        pixels.setPixelColor(i, pixels.Color(rgb[0],rgb[1],rgb[2]));
+        pixels.show();   // Send the updated pixel colors to the hardware. 
+       }   
+    }else{
+      pixels.clear();
+      pixels.show();
+    }   
+  }
+        
 }
 
 void reconnect() {
@@ -74,8 +127,10 @@ void reconnect() {
       // Once connected, publish an announcement...
       //client.publish("outTopic", "hello world");
       // ... and resubscribe
-      client.subscribe("led1/color");
       client.subscribe("led1/state");
+      client.subscribe("led1/r");
+      client.subscribe("led1/g");
+      client.subscribe("led1/b");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -92,6 +147,7 @@ void setup() {
   setup_wifi();
   client.setServer(mqtt_server, portNum);
   client.setCallback(callback);
+  pixels.begin();
 }
 
 void loop() {
@@ -107,8 +163,6 @@ void loop() {
     ++value;
     snprintf (msg, 50, "hello world #%ld", value);
     //Serial.print("Publish message: ");
-    //Serial.println(msg);
-    //client.publish("outTopic", msg);
-    //client.subscribe("dht22/heatindex");
+    //Serial.println(msg);    
   }
 }
